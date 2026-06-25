@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Opaque, full-bleed background: iOS applies its own rounded mask. -->
+  <rect width="512" height="512" fill="#0f766e"/>
+  <g transform="translate(106 96) scale(9.4)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M9 9h14l-2.5 9a3 3 0 0 1-2.9 2.2h-3.2A3 3 0 0 1 11.5 18L9 9Z"/>
+    <path d="M16 20.2V25" stroke-width="1.8"/>
+    <path d="M12.5 25h7"/>
+  </g>
+  <circle cx="228" cy="156" r="16" fill="#5eead4"/>
+  <circle cx="284" cy="142" r="12" fill="#5eead4"/>
+</svg>
