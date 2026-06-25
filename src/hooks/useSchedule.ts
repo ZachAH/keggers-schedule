@@ -12,11 +12,12 @@ import {
 } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from '../lib/firebase'
 import { DEMO_WORKERS, buildDemoShifts, DEFAULT_EOTM } from '../lib/demoData'
-import type { EmployeeOfMonth, Shift, Worker } from '../types'
+import type { EmployeeOfMonth, Note, Shift, Worker } from '../types'
 
 const LS_SHIFTS = 'kegger.shifts'
 const LS_WORKERS = 'kegger.workers'
 const LS_EOTM = 'kegger.eotm'
+const LS_NOTES = 'kegger.notes'
 
 function loadLocal<T>(key: string, fallback: T): T {
   try {
@@ -43,11 +44,15 @@ export interface ScheduleApi {
   workers: Worker[]
   shifts: Shift[]
   eotm: EmployeeOfMonth
+  notes: Note[]
   loading: boolean
   demoMode: boolean
   /** Set when live Firestore reads fail (e.g. security rules not deployed). */
   error: string | null
   setEmployeeOfMonth: (e: EmployeeOfMonth) => Promise<void>
+  addNote: (text: string) => Promise<void>
+  updateNote: (id: string, text: string) => Promise<void>
+  deleteNote: (id: string) => Promise<void>
   addShift: (s: Omit<Shift, 'id'>) => Promise<void>
   updateShift: (id: string, s: Partial<Omit<Shift, 'id'>>) => Promise<void>
   deleteShift: (id: string) => Promise<void>
@@ -61,6 +66,7 @@ export function useSchedule(): ScheduleApi {
   const [workers, setWorkers] = useState<Worker[]>([])
   const [shifts, setShifts] = useState<Shift[]>([])
   const [eotm, setEotm] = useState<EmployeeOfMonth>(DEFAULT_EOTM)
+  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,6 +78,7 @@ export function useSchedule(): ScheduleApi {
       setWorkers(w)
       setShifts(s)
       setEotm(loadLocal<EmployeeOfMonth>(LS_EOTM, DEFAULT_EOTM))
+      setNotes(loadLocal<Note[]>(LS_NOTES, []))
       setLoading(false)
       return
     }
@@ -111,10 +118,19 @@ export function useSchedule(): ScheduleApi {
       },
       onErr,
     )
+    // Admin notes / announcements, newest first.
+    const unsubNotes = onSnapshot(
+      query(collection(db!, 'notes'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        setNotes(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note))
+      },
+      onErr,
+    )
     return () => {
       unsubWorkers()
       unsubShifts()
       unsubEotm()
+      unsubNotes()
     }
   }, [demoMode])
 
@@ -128,6 +144,9 @@ export function useSchedule(): ScheduleApi {
   useEffect(() => {
     if (demoMode && !loading) saveLocal(LS_EOTM, eotm)
   }, [eotm, demoMode, loading])
+  useEffect(() => {
+    if (demoMode && !loading) saveLocal(LS_NOTES, notes)
+  }, [notes, demoMode, loading])
 
   // ── Shift mutations ───────────────────────────────────────────────
   const addShift = useCallback(
@@ -175,6 +194,41 @@ export function useSchedule(): ScheduleApi {
     [demoMode],
   )
 
+  // ── Note mutations ────────────────────────────────────────────────
+  const addNote = useCallback(
+    async (text: string) => {
+      const note = { text, createdAt: Date.now() }
+      if (demoMode) {
+        setNotes((prev) => [{ ...note, id: uid() }, ...prev])
+        return
+      }
+      await addDoc(collection(db!, 'notes'), note)
+    },
+    [demoMode],
+  )
+
+  const updateNote = useCallback(
+    async (id: string, text: string) => {
+      if (demoMode) {
+        setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)))
+        return
+      }
+      await updateDoc(doc(db!, 'notes', id), { text })
+    },
+    [demoMode],
+  )
+
+  const deleteNote = useCallback(
+    async (id: string) => {
+      if (demoMode) {
+        setNotes((prev) => prev.filter((n) => n.id !== id))
+        return
+      }
+      await deleteDoc(doc(db!, 'notes', id))
+    },
+    [demoMode],
+  )
+
   // ── Worker mutations ──────────────────────────────────────────────
   const addWorker = useCallback(
     async (w: Omit<Worker, 'id'>) => {
@@ -214,10 +268,14 @@ export function useSchedule(): ScheduleApi {
     workers,
     shifts,
     eotm,
+    notes,
     loading,
     demoMode,
     error,
     setEmployeeOfMonth,
+    addNote,
+    updateNote,
+    deleteNote,
     addShift,
     updateShift,
     deleteShift,

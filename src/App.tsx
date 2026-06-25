@@ -10,6 +10,7 @@ import LoginModal from './components/LoginModal'
 import WorkerManager from './components/WorkerManager'
 import EmployeeOfMonth from './components/EmployeeOfMonth'
 import EotmEditModal from './components/EotmEditModal'
+import NotesBoard from './components/NotesBoard'
 import { useSchedule } from './hooks/useSchedule'
 import { useAuth } from './hooks/useAuth'
 import {
@@ -83,6 +84,16 @@ export default function App() {
           eotm={schedule.eotm}
           isAdmin={auth.isAdmin}
           onEdit={() => setEotmOpen(true)}
+        />
+      )}
+
+      {!schedule.loading && (
+        <NotesBoard
+          notes={schedule.notes}
+          isAdmin={auth.isAdmin}
+          onAdd={schedule.addNote}
+          onUpdate={schedule.updateNote}
+          onDelete={schedule.deleteNote}
         />
       )}
 

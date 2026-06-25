@@ -19,6 +19,14 @@ export interface Shift {
   location?: string
 }
 
+export interface Note {
+  id: string
+  /** The note body shown on the board. */
+  text: string
+  /** Epoch ms — used to sort newest-first. */
+  createdAt: number
+}
+
 export interface EmployeeOfMonth {
   /** The honoree's name shown under the photo. */
   name: string
