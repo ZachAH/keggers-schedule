@@ -8,6 +8,8 @@ import DayDetailSheet from './components/DayDetailSheet'
 import ShiftFormModal from './components/ShiftFormModal'
 import LoginModal from './components/LoginModal'
 import WorkerManager from './components/WorkerManager'
+import EmployeeOfMonth from './components/EmployeeOfMonth'
+import EotmEditModal from './components/EotmEditModal'
 import { useSchedule } from './hooks/useSchedule'
 import { useAuth } from './hooks/useAuth'
 import {
@@ -30,6 +32,7 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [loginOpen, setLoginOpen] = useState(false)
   const [workersOpen, setWorkersOpen] = useState(false)
+  const [eotmOpen, setEotmOpen] = useState(false)
   const [shiftForm, setShiftForm] = useState<{
     open: boolean
     editing: Shift | null
@@ -74,6 +77,14 @@ export default function App() {
         workerFilter={workerFilter}
         onWorkerFilterChange={setWorkerFilter}
       />
+
+      {!schedule.loading && (
+        <EmployeeOfMonth
+          eotm={schedule.eotm}
+          isAdmin={auth.isAdmin}
+          onEdit={() => setEotmOpen(true)}
+        />
+      )}
 
       {schedule.error && (
         <div className="mx-auto max-w-5xl px-4">
@@ -159,6 +170,14 @@ export default function App() {
         onAdd={schedule.addWorker}
         onUpdate={schedule.updateWorker}
         onDelete={schedule.deleteWorker}
+      />
+
+      <EotmEditModal
+        key={eotmOpen ? 'eotm-open' : 'eotm-closed'}
+        open={eotmOpen}
+        onClose={() => setEotmOpen(false)}
+        eotm={schedule.eotm}
+        onSave={schedule.setEmployeeOfMonth}
       />
     </div>
   )

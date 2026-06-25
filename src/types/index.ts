@@ -19,6 +19,15 @@ export interface Shift {
   location?: string
 }
 
+export interface EmployeeOfMonth {
+  /** The honoree's name shown under the photo. */
+  name: string
+  /** Image source — either a public path ("/EOTM_JUNE.webp") or a data URL. */
+  image: string
+  /** Free-form label for the period, e.g. "June 2026". */
+  month: string
+}
+
 export type ViewMode = 'month' | 'week' | 'agenda'
 
 export interface Filters {

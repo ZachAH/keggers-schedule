@@ -36,3 +36,38 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── Employee of the Month flair ──────────────────────────────────── */
+
+/* Slowly spinning conic-gradient ring behind the photo. */
+@keyframes eotm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.eotm-ring {
+  animation: eotm-spin 6s linear infinite;
+}
+
+/* Twinkling sparkles scattered around the photo. */
+@keyframes eotm-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(20deg);
+  }
+}
+.eotm-sparkle {
+  animation: eotm-twinkle 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eotm-ring,
+  .eotm-sparkle {
+    animation: none;
+  }
+}

@@ -6,15 +6,17 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
   query,
   orderBy,
 } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from '../lib/firebase'
-import { DEMO_WORKERS, buildDemoShifts } from '../lib/demoData'
-import type { Shift, Worker } from '../types'
+import { DEMO_WORKERS, buildDemoShifts, DEFAULT_EOTM } from '../lib/demoData'
+import type { EmployeeOfMonth, Shift, Worker } from '../types'
 
 const LS_SHIFTS = 'kegger.shifts'
 const LS_WORKERS = 'kegger.workers'
+const LS_EOTM = 'kegger.eotm'
 
 function loadLocal<T>(key: string, fallback: T): T {
   try {
@@ -40,10 +42,12 @@ function uid() {
 export interface ScheduleApi {
   workers: Worker[]
   shifts: Shift[]
+  eotm: EmployeeOfMonth
   loading: boolean
   demoMode: boolean
   /** Set when live Firestore reads fail (e.g. security rules not deployed). */
   error: string | null
+  setEmployeeOfMonth: (e: EmployeeOfMonth) => Promise<void>
   addShift: (s: Omit<Shift, 'id'>) => Promise<void>
   updateShift: (id: string, s: Partial<Omit<Shift, 'id'>>) => Promise<void>
   deleteShift: (id: string) => Promise<void>
@@ -56,6 +60,7 @@ export function useSchedule(): ScheduleApi {
   const demoMode = !isFirebaseConfigured
   const [workers, setWorkers] = useState<Worker[]>([])
   const [shifts, setShifts] = useState<Shift[]>([])
+  const [eotm, setEotm] = useState<EmployeeOfMonth>(DEFAULT_EOTM)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +71,7 @@ export function useSchedule(): ScheduleApi {
       const s = loadLocal<Shift[]>(LS_SHIFTS, buildDemoShifts())
       setWorkers(w)
       setShifts(s)
+      setEotm(loadLocal<EmployeeOfMonth>(LS_EOTM, DEFAULT_EOTM))
       setLoading(false)
       return
     }
@@ -97,9 +103,18 @@ export function useSchedule(): ScheduleApi {
       },
       onErr,
     )
+    // Single doc holding the current Employee of the Month.
+    const unsubEotm = onSnapshot(
+      doc(db!, 'meta', 'eotm'),
+      (snap) => {
+        if (snap.exists()) setEotm(snap.data() as EmployeeOfMonth)
+      },
+      onErr,
+    )
     return () => {
       unsubWorkers()
       unsubShifts()
+      unsubEotm()
     }
   }, [demoMode])
 
@@ -110,6 +125,9 @@ export function useSchedule(): ScheduleApi {
   useEffect(() => {
     if (demoMode && !loading) saveLocal(LS_SHIFTS, shifts)
   }, [shifts, demoMode, loading])
+  useEffect(() => {
+    if (demoMode && !loading) saveLocal(LS_EOTM, eotm)
+  }, [eotm, demoMode, loading])
 
   // ── Shift mutations ───────────────────────────────────────────────
   const addShift = useCallback(
@@ -141,6 +159,18 @@ export function useSchedule(): ScheduleApi {
         return
       }
       await deleteDoc(doc(db!, 'shifts', id))
+    },
+    [demoMode],
+  )
+
+  // ── Employee of the Month ─────────────────────────────────────────
+  const setEmployeeOfMonth = useCallback(
+    async (e: EmployeeOfMonth) => {
+      if (demoMode) {
+        setEotm(e)
+        return
+      }
+      await setDoc(doc(db!, 'meta', 'eotm'), e)
     },
     [demoMode],
   )
@@ -183,9 +213,11 @@ export function useSchedule(): ScheduleApi {
   return {
     workers,
     shifts,
+    eotm,
     loading,
     demoMode,
     error,
+    setEmployeeOfMonth,
     addShift,
     updateShift,
     deleteShift,

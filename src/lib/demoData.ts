@@ -1,5 +1,12 @@
 import { format, addDays, startOfWeek } from 'date-fns'
-import type { Shift, Worker } from '../types'
+import type { EmployeeOfMonth, Shift, Worker } from '../types'
+
+/** Seed Employee of the Month — uses the image dropped in /public. */
+export const DEFAULT_EOTM: EmployeeOfMonth = {
+  name: 'Mom',
+  image: '/EOTM_JUNE.webp',
+  month: 'June 2026',
+}
 
 /** A friendly default palette for workers. */
 export const WORKER_COLORS = [
